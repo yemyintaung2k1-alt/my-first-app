@@ -3,127 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Smart Step Ledger</title>
+    <title>2D Smart Step Ledger - Pro</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-
 </head>
 <body>
 
-<div class="top-bar">
-    <button class="menu-toggle-btn" onclick="openMenu()">☰ Menu</button>
-    <h2>2D ဒိုင်ကိုင် လယ်ချာဘုတ်</h2>
-    <div style="width: 70px;"></div>
-</div>
+<div id="app-content-section">
 
-<div class="main-container">
-    
-    <div id="main-page-section" class="app-panel active">
-        <div class="active-day-banner">
-            အလုပ်လုပ်နေသည့် စာရင်းဇယား - <span id="currentActiveDayLabel">တနင်္လာနေ့ (မနက်ပိုင်း)</span>
-        </div>
-
-        <div class="box">
-            <h3>ဒီနေရာမှာကူးထည့်ပါ</h3>
-            <textarea id="rawInput" placeholder="ဥပမာ - 23-500 / 05r1000 / ၁၂ထိပ်၃၀၀၀"></textarea>
-            <button class="btn" onclick="parse2DText()">တင်မည်</button>
-            
-            <div id="batchTotalDisplay" class="batch-total-row" style="display: none;">
-                ယခုတင်လိုက်သည့် စာရင်းစုစုပေါင်း: <span id="batchTotalAmt">0</span> ကျပ်
-            </div>
-
-            <div class="limit-row">
-                <label><b>ဂဏန်းတစ်ကွက် Limit:</b> </label>
-                <input type="number" id="numLimit" value="5000" onchange="updateOutText()">
-            </div>
-        </div>
-
-        <div class="box lay-out-box">
-            <h3>ကာသီး</h3>
-            <textarea id="outText" readonly placeholder="Limit ကျော်သွားသော ဂဏန်းများနှင့် ပမာဏများ ဤနေရာတွင် ပေါ်လာမည်။"></textarea>
-            
-            <div class="action-buttons">
-                <button class="btn copy-btn" onclick="copyOutTextOnly()">ကူးယူမည်</button>
-                <button class="btn delete-btn" onclick="confirmAndDeleteOutText()">ဖျက်မည်</button>
-            </div>
-        </div>
-
-        <div class="box">
-            <h3 class="text-left">ဖြတ်ပြီးသား စာရင်းမှတ်တမ်း (Logs)</h3>
-            <div class="log-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>မူရင်း</th>
-                            <th>ဂဏန်းများ</th>
-                            <th>ထိုးကြေး</th>
-                            <th>စုစုပေါင်း</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logBody">
-                        <tr>
-                            <td colspan="4" class="no-log">မှတ်တမ်းမရှိသေးပါ။</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="top-bar">
+        <button class="menu-toggle-btn" onclick="openMenu()">☰ Menu</button>
+        <h2>2D ဒိုင်ကိုင် လယ်ချာဘုတ်</h2>
+        <div style="width: 70px;"></div>
     </div>
 
-    <div id="ledger-page-section" class="app-panel">
-        <div class="box">
-            <h3>ဒိုင်ချုပ် ဇယားကွက် (၁၀၀ ကွက်)</h3>
-            
-            <div class="dash">
-                <div class="card in">
-                    <h4>ရောင်းရငွေ</h4>
-                    <p id="totalSales">0</p>
+    <div class="main-container">
+        
+        <div id="main-page-section" class="app-panel active">
+            <div class="active-day-banner">
+                <span id="currentActiveDayLabel">တနင်္လာနေ့ (မနက်ပိုင်း)</span>
+            </div>
+
+            <div class="box">
+                <textarea id="rawInput" placeholder="စာရင်းများ ဤနေရာတွင် ရိုက်ထည့်ပါ..."></textarea>
+                <button class="btn" onclick="parse2DText()">တင်မည်</button>
+                
+                <div id="batchTotalDisplay" class="batch-total-row" style="display: none;">
+                    စုစုပေါင်း: <span id="batchTotalAmt">0</span> ကျပ်
                 </div>
-                <div class="card win-card">
-                    <h4>ပေါက်ရိုက်</h4>
-                    <input type="number" id="winNum" placeholder="65" oninput="checkWinner()">
-                </div>
-                <div class="card out">
-                    <h4>လျော်ကြေး</h4>
-                    <p id="totalPayout">0</p>
+
+                <div class="limit-row">
+                    <label><b>Limit:</b> </label>
+                    <input type="number" id="numLimit" value="5000" onchange="updateOutText()">
                 </div>
             </div>
 
-            <div class="grid-100" id="boardGrid"></div>
-        </div>
-    </div>
-</div>
+            <div class="box lay-out-box">
+                <textarea id="outText" readonly placeholder="Limit ကျော်စာရင်းများ..."></textarea>
+                <div class="action-buttons">
+                    <button class="btn copy-btn" onclick="copyOutTextOnly()">ကူးယူမည်</button>
+                    <button class="btn delete-btn" onclick="confirmAndDeleteOutText()">ဖျက်မည်</button>
+                </div>
+            </div>
 
-<div id="overlayMenu" class="overlay-menu">
-    <div class="menu-header">
-        <h3>2D LEDGER MENU</h3>
-        <button class="menu-close-btn" onclick="closeMenu()">❌ ပိတ်မည်</button>
-    </div>
-    
-    <div class="menu-content">
-        <div id="menu-step-1">
-            <button class="menu-cat-btn" onclick="goToStep2()">📝 စာရင်းအသစ်ပြုလုပ်မည် ❯</button>
-            <button class="menu-cat-btn" onclick="selectLedgerCategory()">📊 လယ်ချာ ဇယားကွက် ❯</button>
+            <div class="box">
+                <div class="log-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>မူရင်း</th>
+                                <th>ဂဏန်း</th>
+                                <th>ထိုးကြေး</th>
+                                <th>စုစုပေါင်း</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logBody">
+                            <tr>
+                                <td colspan="4" class="no-log">မှတ်တမ်းမရှိသေးပါ။</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <div id="menu-step-2" style="display: none;">
-            <div class="back-link" onclick="backToStep1()">❮ နောက်သို့ ပြန်သွားမည်</div>
-            <button class="menu-day-btn" onclick="goToStep3('Mon', 'တနင်္လာ')">📅 တနင်္လာနေ့ (Mon)</button>
-            <button class="menu-day-btn" onclick="goToStep3('Tue', 'အင်္ဂါ')">📅 အင်္ဂါနေ့ (Tue)</button>
-            <button class="menu-day-btn" onclick="goToStep3('Wed', 'ဗုဒ္ဓဟူး')">📅 ဗုဒ္ဓဟူးနေ့ (Wed)</button>
-            <button class="menu-day-btn" onclick="goToStep3('Thu', 'ကြာသပတေး')">📅 ကြာသပတေးနေ့ (Thu)</button>
-            <button class="menu-day-btn" onclick="goToStep3('Fri', 'သောကြာ')">📅 သောကြာနေ့ (Fri)</button>
+        <div id="ledger-page-section" class="app-panel">
+            <div class="box">
+                <div class="dash">
+                    <div class="card in">
+                        <h4>ရောင်းရငွေ</h4>
+                        <p id="totalSales">0</p>
+                    </div>
+                    <div class="card win-card">
+                        <h4>ပေါက်သီး</h4>
+                        <input type="number" id="winNum" placeholder="ဂဏန်းထည့်ပါ" oninput="checkWinner()">
+                    </div>
+                    <div class="card out">
+                        <h4>လျော်ကြေး</h4>
+                        <p id="totalPayout">0</p>
+                    </div>
+                </div>
+
+                <div class="grid-100" id="boardGrid"></div>
+            </div>
         </div>
 
-        <div id="menu-step-3" style="display: none;">
-            <div class="back-link" onclick="backToStep2()">❮ ရက်ရွေးချယ်မှုသို့ ပြန်သွားမည်</div>
-            <div id="selected-day-title" class="sub-title-day"></div>
-            <div class="shift-choose-row">
-                <button class="shift-select-btn morning" onclick="finalizeDayShift('AM')">☀️ မနက်ပိုင်း</button>
-                <button class="shift-select-btn evening" onclick="finalizeDayShift('PM')">🌙 ညနေပိုင်း</button>
+        <div id="history-page-section" class="app-panel">
+            <div class="box">
+                <h3>📜 လွန်ခဲ့သော ၃ ပတ်စာ စာရင်းမှတ်တမ်းများ</h3>
+                <div id="historyLogContainer" class="history-container" style="margin-top: 15px;"></div>
             </div>
         </div>
     </div>
+
+    <div id="overlayMenu" class="overlay-menu">
+        <div class="menu-header">
+            <h3>2D LEDGER MENU</h3>
+            <button class="menu-close-btn" onclick="closeMenu()">❌ ပိတ်မည်</button>
+        </div>
+        
+        <div class="menu-content" style="display: flex; flex-direction: column; height: calc(100% - 60px); justify-content: space-between;">
+            <div id="menu-step-1">
+                <button class="menu-cat-btn" onclick="goToStep2()">📝 စာရင်းအသစ်ပြုလုပ်မည် ❯</button>
+                <button class="menu-cat-btn" onclick="selectLedgerCategory()">📊 လယ်ချာ ဇယားကွက် ❯</button>
+                <button class="menu-cat-btn" onclick="selectHistoryCategory()">📜 ၃ ပတ်စာ မှတ်တမ်း ❯</button>
+                <button class="menu-cat-btn" onclick="triggerResetWeeklyData()" style="background: #990000; color: #fff; margin-top: 15px; border: 1px solid #ff4444;">🧹 တစ်ပတ်စာပြီးပြီ (စာရင်းဖျက်မည်)</button>
+            </div>
+
+            <div id="menu-step-2" style="display: none;">
+                <div class="back-link" onclick="backToStep1()">❮ နောက်သို့ ပြန်သွားမည်</div>
+                <button class="menu-day-btn" onclick="goToStep3('Mon', 'တနင်္လာ')">📅 တနင်္လာနေ့</button>
+                <button class="menu-day-btn" onclick="goToStep3('Tue', 'အင်္ဂါ')">📅 အင်္ဂါနေ့</button>
+                <button class="menu-day-btn" onclick="goToStep3('Wed', 'ဗုဒ္ဓဟူး')">📅 ဗုဒ္ဓဟူးနေ့</button>
+                <button class="menu-day-btn" onclick="goToStep3('Thu', 'ကြာသပတေး')">📅 ကြာသပတေးနေ့</button>
+                <button class="menu-day-btn" onclick="goToStep3('Fri', 'သောကြာ')">📅 သောကြာနေ့</button>
+            </div>
+
+            <div id="menu-step-3" style="display: none;">
+                <div class="back-link" onclick="backToStep2()">❮ ရက်ရွေးချယ်မှုသို့ ပြန်သွားမည်</div>
+                <div id="selected-day-title" class="sub-title-day"></div>
+                <div class="shift-choose-row">
+                    <button class="shift-select-btn morning" onclick="finalizeDayShift('AM')">☀️ မနက်ပိုင်း</button>
+                    <button class="shift-select-btn evening" onclick="finalizeDayShift('PM')">🌙 ညနေပိုင်း</button>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 20px;">
+                <button class="menu-cat-btn" onclick="handleExitApp()" style="background: #333; color: #aaa; text-align: center;">ထွက်မည် ↩</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script src="script.js"></script>

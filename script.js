@@ -1,6 +1,6 @@
-// Global State Multi-Ledger Control
-let currentDayKey = 'Mon'; // Mon, Tue, Wed, Thu, Fri
-let currentShiftKey = 'AM'; // AM, PM
+// Global State Multi-Ledger Control & History
+let currentDayKey = 'Mon'; 
+let currentShiftKey = 'AM'; 
 let tempSelectedDayKey = 'Mon';
 let tempSelectedDayName = '';
 
@@ -8,27 +8,121 @@ let weeklyData = {};
 const dayKeys = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const shiftKeys = ['AM', 'PM'];
 
-// ဒေတာတည်ဆောက်ပုံများကို သီးခြားစီ အပတ်စဉ်အလိုက် သတ်မှတ်ခြင်း
-dayKeys.forEach(dKey => {
-    weeklyData[dKey] = {};
-    shiftKeys.forEach(sKey => {
-        weeklyData[dKey][sKey] = {
-            ledger: {},
-            totalSalesAmt: 0,
-            logHistory: []
-        };
-        for(let i=0; i<100; i++) {
-            let key = i.toString().padStart(2, '0');
-            weeklyData[dKey][sKey].ledger[key] = 0;
-        }
+function initData() {
+    let storedWeekly = localStorage.getItem('2d_weekly_data');
+    if (storedWeekly) {
+        weeklyData = JSON.parse(storedWeekly);
+    } else {
+        resetWeeklyStructure();
+    }
+}
+
+function resetWeeklyStructure() {
+    weeklyData = {};
+    dayKeys.forEach(dKey => {
+        weeklyData[dKey] = {};
+        shiftKeys.forEach(sKey => {
+            weeklyData[dKey][sKey] = {
+                ledger: {},
+                totalSalesAmt: 0,
+                logHistory: []
+            };
+            for(let i=0; i<100; i++) {
+                let key = i.toString().padStart(2, '0');
+                weeklyData[dKey][sKey].ledger[key] = 0;
+            }
+        });
     });
+    saveWeeklyToStorage();
+}
+
+function saveWeeklyToStorage() {
+    localStorage.setItem('2d_weekly_data', JSON.stringify(weeklyData));
+}
+
+function triggerResetWeeklyData() {
+    let confirmFirst = confirm("⚠️ သတိပေးချက်!\n\nတနင်္လာနေ့မှ သောကြာနေ့အထိ ရှိသမျှ စာရင်းဇယားအားလုံးကို ရှင်းလင်းဖျက်သိမ်းမှာ သေချက်ပါသလား?");
+    if (!confirmFirst) return;
+
+    let confirmSecond = confirm("🚨 နောက်ဆုံးအတည်ပြုချက်!\n\nစာရင်းများအားလုံး ပျက်သွားပါမည်။ (မှတ်ချက် - ၃ ပတ်စာမှတ်တမ်းထဲသို့ အလိုအလျောက် ရွှေ့ပြောင်းသိမ်းဆည်းပေးမည် ဖြစ်ပါသည်)");
+    if (!confirmSecond) return;
+
+    let weeklyTotalSales = 0;
+    dayKeys.forEach(d => {
+        shiftKeys.forEach(s => {
+            weeklyTotalSales += weeklyData[d][s].totalSalesAmt;
+        });
+    });
+
+    let today = new Date();
+    let archiveDateString = today.toLocaleDateString('my-MM', { year: 'numeric', month: 'long', day: 'numeric' }) + " " + today.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    let newArchiveRecord = {
+        date: archiveDateString,
+        totalSales: weeklyTotalSales,
+        detailData: JSON.parse(JSON.stringify(weeklyData))
+    };
+
+    let archiveHistory = JSON.parse(localStorage.getItem('2d_archive_history')) || [];
+    archiveHistory.unshift(newArchiveRecord);
+
+    if (archiveHistory.length > 3) {
+        archiveHistory = archiveHistory.slice(0, 3);
+    }
+
+    localStorage.setItem('2d_archive_history', JSON.stringify(archiveHistory));
+    resetWeeklyStructure();
+
+    finalizeDayShift('AM');
+    alert("🧹 စာရင်းများအားလုံးကို အောင်မြင်စွာ ရှင်းလင်းပြီး၊ ၃ ပတ်စာမှတ်တမ်းထဲသို့ ထည့်သွင်းသိမ်းဆည်းပြီးပါပြီ ခင်ဗျာ။");
+    closeMenu();
+}
+
+function renderArchiveHistory() {
+    const container = document.getElementById('historyLogContainer');
+    let archiveHistory = JSON.parse(localStorage.getItem('2d_archive_history')) || [];
+
+    if (archiveHistory.length === 0) {
+        container.innerHTML = `<div style="color: #aaa; text-align: center; padding: 20px;">သိမ်းဆည်းထားသော အပတ်စဉ်မှတ်တမ်း မရှိသေးပါခင်ဗျာ။</div>`;
+        return;
+    }
+
+    container.innerHTML = '';
+    archiveHistory.forEach((record, index) => {
+        container.innerHTML += `
+            <div class="box" style="border: 1px solid #ffaa00; margin-bottom: 15px; background: #162a45;">
+                <h4 style="color: #ffaa00; margin: 0 0 5px 0;">📦 အပတ်စဉ်မှတ်တမ်း - (${index + 1})</h4>
+                <p style="margin: 3px 0; font-size: 13px; color: #bbb;"><b>သိမ်းဆည်းခဲ့သည့်နေ့ရက်:</b> ${record.date}</p>
+                <p style="margin: 3px 0; font-size: 15px; color: #fff;"><b>တစ်ပတ်စာ စုစုပေါင်းရောင်းရငွေ:</b> <span style="color: #00ffcc; font-weight: bold;">${record.totalSales.toLocaleString()}</span> ကျပ်</p>
+            </div>
+        `;
+    });
+}
+
+function selectHistoryCategory() {
+    document.getElementById('main-page-section').classList.remove('active');
+    document.getElementById('ledger-page-section').classList.remove('active');
+    document.getElementById('history-page-section').classList.add('active');
+    renderArchiveHistory();
+    closeMenu();
+}
+
+function handleExitApp() {
+    if(confirm("အပလီကေးရှင်းမှ ထွက်ခွာမှာ သေချာပါသလား?")) {
+        alert("စနစ်ကို ပိတ်လိုက်ပါပြီခင်ဗျာ။");
+    }
+    closeMenu();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    initData();
+    updateOutText();
+    renderLogs();
 });
 
 const natsat = ['18', '81', '24', '42', '35', '53', '69', '96'];
 const power = ['05', '50', '16', '61', '27', '72', '38', '83', '49', '94'];
 const twins = ['00', '11', '22', '33', '44', '55', '66', '77', '88', '99'];
-const evenTwins = ['00', '22', '44', '66', '88'];
-const oddTwins = ['11', '33', '55', '77', '99'];
 const brothers = ['01','10','12','21','23','32','34','43','45','54','56','65','67','76','78','87','89','98','90','09'];
 
 const burmeseNumMap = { 'သုည':'0','၀':'0','0':'0','တစ်':'1','၁':'1','1':'1','နှစ်':'2','၂':'2','2':'2','သုံး':'3','၃':'3','3':'3','လေး':'4','၄':'4','4':'4','ငါး':'5','၅':'5','5':'5','ခြောက်':'6','၆':'6','6':'6','ခုနစ်':'7','၇':'7','7':'7','ရှစ်':'8','၈':'8','8':'8','ကိုး':'9','၉':'9','9':'9' };
@@ -56,7 +150,7 @@ function backToStep1() {
 function goToStep3(dayKey, dayName) {
     tempSelectedDayKey = dayKey;
     tempSelectedDayName = dayName;
-    document.getElementById('selected-day-title').innerText = `${dayName}နေ့ စာရင်းရွေးချယ်မှု`;
+    document.getElementById('selected-day-title').innerText = `${dayName}နေ့ စာရင်း`;
     document.getElementById('menu-step-2').style.display = 'none';
     document.getElementById('menu-step-3').style.display = 'block';
 }
@@ -68,9 +162,10 @@ function backToStep2() {
 function finalizeDayShift(shift) {
     currentDayKey = tempSelectedDayKey;
     currentShiftKey = shift;
-    let shiftName = shift === 'AM' ? 'မနက်ပိုင်း' : 'ညနေပိုင်း';
+    let shiftName = shift === 'AM' ? 'မနက်' : 'ညနေ';
     document.getElementById('currentActiveDayLabel').innerText = `${tempSelectedDayName}နေ့ (${shiftName})`;
     document.getElementById('ledger-page-section').classList.remove('active');
+    document.getElementById('history-page-section').classList.remove('active');
     document.getElementById('main-page-section').classList.add('active');
     document.getElementById('batchTotalDisplay').style.display = 'none';
     updateOutText();
@@ -80,6 +175,7 @@ function finalizeDayShift(shift) {
 
 function selectLedgerCategory() {
     document.getElementById('main-page-section').classList.remove('active');
+    document.getElementById('history-page-section').classList.remove('active');
     document.getElementById('ledger-page-section').classList.add('active');
     renderGrid();
     closeMenu();
@@ -117,7 +213,7 @@ function renderGrid() {
     const customOrder = getCustomSortedKeys();
 
     customOrder.forEach(key => {
-        if(key === "TWINS_MARKER") { container.innerHTML += `<div class="section-title">အပူး ၁၀ ကွက် စာရင်း</div>`; return; }
+        if(key === "TWINS_MARKER") { container.innerHTML += `<div class="section-title">အပူး ၁၀ ကွက်</div>`; return; }
         let amt = activeData.ledger[key];
         let isOver = amt >= limit && limit > 0;
         let css = isOver ? "num-cell limit-alert" : "num-cell";
@@ -133,37 +229,32 @@ function renderGrid() {
     document.getElementById('totalSales').innerText = activeData.totalSalesAmt.toLocaleString();
 }
 
-// 🌟 ဆက်တိုက်ကပ်ရေးထားသော စာသားများကိုပါ အလိုအလျောက် ခွဲထုတ်တွက်ချက်ပေးမည့် စနစ်သစ် 🌟
+// 🌟 စာသားများအား Space ကြောင့် လွဲချော်မှုမရှိစေရန် အပြည့်အစုံ ပြုပြင်ထားသော စနစ်အသစ်
 function parse2DText() {
     const text = document.getElementById('rawInput').value.trim(); if(!text) return;
     let activeData = weeklyData[currentDayKey][currentShiftKey];
     
-    // Line တစ်ကြောင်းချင်းစီ ခွဲထုတ်ခြင်း
+    // တစ်ကြောင်းချင်းစီခွဲထုတ်ခြင်း
     const lines = text.split(/\r?\n/);
     let currentBatchTotalSales = 0;
 
     lines.forEach(line => {
         let orig = line.trim(); if(!orig) return;
         
-        // မြန်မာဂဏန်းများကို အင်္ဂလိပ်ဂဏန်း ပြောင်းလဲခြင်း
+        // မြန်မာဂဏန်းများကို အင်္ဂလိပ်ပြောင်းပြီး စာလုံးအသေးလုပ်ခြင်း
         let convertedLine = convertBurmeseToEnglish(orig.toLowerCase());
         
-        // သင်္ကေတ အနည်းငယ် ရှင်းလင်းခြင်း ( space, -, =, / များကို ခွဲခြားရလွယ်အောင် ညှိခြင်း )
-        // သို့သော် ကပ်ရက် ရေးသားမှုများကို ရှာဖွေနိုင်ရန် Regular Expression Pattern သုံးပါမည်။
+        // 🌟 ကြားထဲက Space (ကွက်လပ်) အားလုံးကို ဖျက်ချပစ်လိုက်ခြင်း (ဥပမာ - "59 r 10000" မှ "59r10000" သို့ ပြောင်းလဲပစ်မည်)
+        let cleanLine = convertedLine.replace(/\s+/g, '');
         
-        // 🌟 2D စာရင်း ပုံစံအမျိုးမျိုးကို စာကြောင်းထဲမှ ရှာဖွေဖော်ထုတ်ရန် သတ်မှတ်ချက် (Regex)
-        // ဥပမာ - "25r10000", "26ထိပ်5000", "05-1000", "35b200" စသည်တို့ကို သီးသန့်စီ အတွဲလိုက် ဖမ်းယူပေးမည်။
-        const pattern = /(([0-9.,]+(r|အာ|\*|&|@|d|ဒဲ့)?)|([0-9])(ထိပ်|h|ပိတ်|t|b|ဘရိတ်)|(နတ်ခတ်|နတ်ခက်|နက္ခတ်|nk|power|ပါဝါ|အပူး|ပူး|ညီအကို|ညီကို|ကိုညီ))([0-9]+)/g;
+        // စာရင်းပုံစံ Pattern ကို တိကျစွာ ခွဲထုတ်ခြင်း
+        const pattern = /(([0-9.,]+)(r|အာ|\*|&|@|d|ဒဲ့)?|([0-9])(ထိပ်|h|ပိတ်|t|b|ဘရိတ်)|(နတ်ခတ်|နတ်ခက်|နက္ခတ်|nk|power|ပါဝါ|အပူး|ပူး|ညီအကို|ညီကို|ကိုညီ))([0-9]+)/g;
+        let matches = [...cleanLine.matchAll(pattern)];
         
-        let matches = [...convertedLine.matchAll(pattern)];
-        
-        // အကယ်၍ တစ်ကြောင်းလုံး ကပ်ရေးထားခြင်းမျိုး မဟုတ်ဘဲ Pattern နဲ့လည်း မကိုက်ညီပါက 
-        // ယခင်အတိုင်း တစ်ကြောင်းလုံးကို ပေါင်းစပ်ဖတ်ရှုရန် စီမံခြင်း
         if (matches.length === 0) {
-            let cur = convertedLine.replace(/[\s\-=\/]/g, '');
+            let cur = cleanLine.replace(/[\s\-=\/]/g, '');
             processChunk(cur, orig, activeData, (amt) => { currentBatchTotalSales += amt; });
         } else {
-            // အတွဲလိုက် တွေ့ရှိပါက တစ်တွဲချင်းစီကို ခွဲထုတ်ပြီး စာရင်းသွင်းခြင်း
             matches.forEach(match => {
                 let chunk = match[0].replace(/[\s\-=\/]/g, '');
                 processChunk(chunk, match[0], activeData, (amt) => { currentBatchTotalSales += amt; });
@@ -171,7 +262,6 @@ function parse2DText() {
         }
     });
 
-    // မျက်နှာပြင်ပေါ်တွင် တစ်ကြိမ်တင် စုစုပေါင်း ပေါင်းလဒ်ကို ပြသခြင်း
     if (currentBatchTotalSales > 0) {
         document.getElementById('batchTotalAmt').innerText = currentBatchTotalSales.toLocaleString();
         document.getElementById('batchTotalDisplay').style.display = 'block';
@@ -180,10 +270,10 @@ function parse2DText() {
     }
 
     document.getElementById('rawInput').value = '';
+    saveWeeklyToStorage(); 
     updateOutText(); renderLogs();
 }
 
-// ခွဲထုတ်ရရှိလာသော အပိုင်းအစ (Chunk) တစ်ခုချင်းစီကို စာရင်းခွဲသွင်းပေးသည့် ကူညီပေးမည့် Function
 function processChunk(conv, originalPart, activeData, onSalesAdded) {
     let targets = []; let amt = 0; let isR = false; let isD = false; let dispAmt = "";
 
@@ -233,11 +323,11 @@ function renderLogs() {
 }
 
 function copyOutTextOnly() {
-    const area = document.getElementById('outText'); if(!area.value) { alert('ကူးယူရန် စာရင်းမရှိသေးပါ!'); return; }
+    const area = document.getElementById('outText'); if(!area.value) return;
     area.select(); navigator.clipboard.writeText(area.value);
 }
 function confirmAndDeleteOutText() {
-    const area = document.getElementById('outText'); if(!area.value) { alert('ဖျက်ရန် စာရင်းမရှိသေးပါ!'); return; }
+    const area = document.getElementById('outText'); if(!area.value) return;
     if (confirm("ဒိုင်ကို တင်ပြီးပြီလားခင်ဗျာ?")) { area.value = ''; }
 }
 
